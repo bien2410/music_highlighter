@@ -17,18 +17,22 @@ def overlap(interval1: Tuple[int, int], interval2: Tuple[int, int]) -> int:
     end = min(interval1[1], interval2[1])
     return max(0, end - start)
 
-def calculate_metrics(predictions: Tuple[int, int], true_labels: List[Tuple[int, int]]) -> Tuple[float, float, float]:
-
-    index = 0
+def calculate_metrics(predictions: List[Tuple[int, int]], true_labels: List[Tuple[int, int]]) -> Tuple[float, float, float]:
+    print(predictions)
+    print(true_labels)
+    indexPrediction = 0
+    indexLabel = 0
     maxOverlap = 0
 
-    for i in range(len(true_labels)):
-        if overlap(predictions, true_labels[i]) > maxOverlap:
-            maxOverlap = overlap(predictions, true_labels[i])
-            index = i
+    for i in range(len(predictions)):
+        for j in range(len(true_labels)):
+            if overlap(predictions[i], true_labels[j]) > maxOverlap:
+                maxOverlap = overlap(predictions[i], true_labels[j])
+                indexPrediction = i
+                indexLabel = j
        
-    precision = maxOverlap / (predictions[1] - predictions[0])
-    recall = maxOverlap / (true_labels[i][1] - true_labels[i][0]) 
+    precision = maxOverlap / (predictions[indexPrediction][1] - predictions[indexPrediction][0])
+    recall = maxOverlap / (true_labels[indexLabel][1] - true_labels[indexLabel][0]) 
     f1_score = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     
     return precision, recall, f1_score
@@ -50,6 +54,8 @@ def evaluate(file_path, length=15):
             reader = csv.reader(file)
             next(reader) 
             for row in reader:
+                if (row[1] != "La 1 thang con trai"):
+                    continue
                 f = "dataset\\" + row[1] + ".mp3"
                 # print(f)
                 audio, spectrogram, duration = audio_read(f)
@@ -70,10 +76,22 @@ def evaluate(file_path, length=15):
 
                 attn_score = attn_score.cumsum()
                 attn_score = np.append(attn_score[length], attn_score[length:] - attn_score[:-length])
-                index = np.argmax(attn_score)
+                # index = np.argmax(attn_score)
 
-                highlight = [index, index+length]
+                # predictions = [index, index+length]
                 
+                sorted_indices = np.argsort(attn_score)[::-1]
+                predictions = []
+                used_indices = set()
+
+                for index in sorted_indices:
+                    if (len(predictions) == 3):
+                        break
+                    is_overlap = any(index < h_end and index + length > h_start for (h_start, h_end) in predictions)
+
+                    if not is_overlap:
+                        predictions.append([index, index + length])
+
                 true_labels: List[Tuple[int, int]] = []
                 start1 = convert_to_seconds(row[4])
                 start2 = convert_to_seconds(row[5])
@@ -85,10 +103,13 @@ def evaluate(file_path, length=15):
                 
                 count += 1
                 print(count)
-                precision, recall, f1_score = calculate_metrics(highlight, true_labels)
+                precision, recall, f1_score = calculate_metrics(predictions, true_labels)
                 PRE += precision
                 REC += recall
                 F1 += f1_score
+                print(f"Precision: {precision:.2f}")
+                print(f"Recall: {recall:.2f}")
+                print(f"F1 Score: {f1_score:.2f}")    
 
         PRE /= count
         REC /= count
