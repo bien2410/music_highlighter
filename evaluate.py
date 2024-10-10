@@ -39,23 +39,19 @@ def calculate_metrics(predictions: List[Tuple[int, int]], true_labels: List[Tupl
 
 
 def evaluate(file_path, length=15):
-    PRE = 0
-    REC = 0
-    F1 = 0
+    results = []
 
     with tf.Session() as sess:
         model = MusicHighlighter()
         sess.run(tf.global_variables_initializer())
         model.saver.restore(sess, 'model/model')
 
-        count = 0
-
         with open(file_path, mode='r', encoding='latin-1') as file:
             reader = csv.reader(file)
             next(reader) 
             for row in reader:
-                if (row[1] != "La 1 thang con trai"):
-                    continue
+                # if (row[1] != "La 1 thang con trai"):
+                #     continue
                 f = "dataset\\" + row[1] + ".mp3"
                 # print(f)
                 audio, spectrogram, duration = audio_read(f)
@@ -101,25 +97,23 @@ def evaluate(file_path, length=15):
                 true_labels.append((start3, start3 + 15))
 
                 
-                count += 1
-                print(count)
+                print(len(results) + 1)
                 precision, recall, f1_score = calculate_metrics(predictions, true_labels)
-                PRE += precision
-                REC += recall
-                F1 += f1_score
-                print(f"Precision: {precision:.2f}")
-                print(f"Recall: {recall:.2f}")
-                print(f"F1 Score: {f1_score:.2f}")    
+                results.append((precision, recall, f1_score))
+                print(f"Precision = {precision}, Recall = {recall}, F1-score = {f1_score}")  
 
-        PRE /= count
-        REC /= count
-        F1 /= count
+        PRE = sum([x[0] for x in results]) / len(results)
+        REC = sum([x[1] for x in results]) / len(results)
+        F1 = sum([x[2] for x in results]) / len(results)
 
         print(f"Precision: {PRE:.2f}")
         print(f"Recall: {REC:.2f}")
-        print(f"F1 Score: {F1:.2f}")        
+        print(f"F1 Score: {F1:.2f}")      
+
+        # for i, (precision, recall, f1_score) in enumerate(results):
+        #     print(f"Music {i+1}: Precision = {precision}, Recall = {recall}, F1-score = {f1_score}")  
                     
                     
 if __name__ == '__main__':
-    file_path = 'dataset\\label.csv'
+    file_path = 'dataset\\labelEdit.csv'
     evaluate(file_path=file_path, length=30)
