@@ -1,4 +1,0 @@
-Evaluation time: approximately 3 seconds for the model to predict the highlight of a 5-minute song. 
-(CPU: Intel Core i3-1115G4, 2 cores/4 processors, 3.0GHz) 
-
-Thời gian để mô hình dự đoán nhãn của 1 bài hát dài 5p mất khoảng 3s cho cả model tensorflow và tflite. Thời gian này được đo khi chạy mô hình trên CPU trên.
